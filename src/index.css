@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* Reutilizables: usa @layer utilities/components en v4 */
+@layer utilities {
+  .card { @apply rounded-2xl border border-zinc-200/70 bg-white/90 shadow-sm backdrop-blur; }
+  .card-body { @apply p-5 sm:p-6; }
+  .badge { @apply inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-xs text-zinc-600; }
+}
+
+/* Globales: el gradiente va como CSS normal (no @apply arbitrary) */
+@layer base {
+  body {
+    @apply bg-zinc-100;
+    background-image:
+      radial-gradient(1200px 600px at 10% -10%, rgba(168,230,207,0.133) 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 0%, rgba(255,140,102,0.125) 0%, transparent 55%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+}
+
+
