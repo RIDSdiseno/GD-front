@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import AuthContext from "./AuthProvider.tsx";
+import AuthContext from "./AuthProvider";       // 👈 usa el nombre real del archivo
 import type { AuthContextType } from "./authHelpers";
 
 export function useAuth(): AuthContextType {

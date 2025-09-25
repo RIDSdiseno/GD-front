@@ -1,8 +1,9 @@
+// src/host/login.tsx (o donde tengas este componente)
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail, Loader2, LogIn } from "lucide-react";
 import LoginCarousel from "../components/LoginCarrusel";
-import { storeSession } from "../utils/auth"; // ✅ Importar la función correcta
+import { storeSession } from "../utils/auth";
 
 const LoginGD: React.FC = () => {
   const [form, setForm] = useState({ email: "", password: "", remember: false });
@@ -20,8 +21,8 @@ const LoginGD: React.FC = () => {
     try {
       const txt = await res.text();
       try {
-        const data = JSON.parse(txt);
-        return data?.error ?? data?.message ?? txt ?? "Error al iniciar sesión";
+        const data = JSON.parse(txt) as { error?: string; message?: string };
+        return (data.error ?? data.message ?? txt) || "Error al iniciar sesión";
       } catch {
         return txt || "Error al iniciar sesión";
       }
@@ -43,10 +44,14 @@ const LoginGD: React.FC = () => {
       return;
     }
 
+    const ctrl = new AbortController();
+
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // importante para la cookie de refresh (rt)
+        signal: ctrl.signal,
         body: JSON.stringify({
           email: form.email.trim().toLowerCase(),
           password: form.password,
@@ -59,23 +64,45 @@ const LoginGD: React.FC = () => {
         return;
       }
 
-      const data = await response.json();
-      const { token, user } = data;
+      const data = (await response.json()) as {
+        token?: string;
+        user?: {
+          id: number;
+          nombreUsuario: string;
+          email: string;
+          nivel: "ADMIN" | "SUB_ADMIN" | "USER";
+          status: boolean;
+          isAdmin?: boolean;
+        };
+      };
+
+      const token = data?.token ?? "";
+      const user = data?.user;
 
       if (!token || !user) {
         setError("Faltan datos en la respuesta del servidor.");
         return;
       }
 
-      // ✅ Guardar token y usuario con función centralizada
+      // Guarda sesión centralizada
       storeSession(user, token, form.remember);
+      // Asegura compatibilidad con lectores que esperan "accessToken"
+      try {
+        localStorage.setItem("accessToken", token);
+        if (!form.remember) sessionStorage.setItem("accessToken", token);
+      } catch {
+        /* ignore */
+      }
 
-      navigate("/dashboard", { replace: true });
+      // Redirige al Dashboard index
+      navigate("/", { replace: true });
     } catch {
       setError("Error de red, por favor intente nuevamente.");
     } finally {
       setLoading(false);
     }
+
+    return () => ctrl.abort();
   };
 
   return (
@@ -92,10 +119,8 @@ const LoginGD: React.FC = () => {
           <div className="rounded-[16px] md:rounded-[23px] bg-black/20 md:backdrop-blur-xl">
             <div className="md:h-[94svh] lg:h-[95svh]">
               <div className="grid h-full w-full items-stretch gap-3 sm:gap-4 md:gap-5 p-2 sm:p-3 md:p-4 grid-cols-1 lg:grid-cols-[1.9fr_1.1fr] xl:grid-cols-[2fr_1.05fr] 2xl:grid-cols-[2.1fr_.9fr]">
-                
                 {/* IZQUIERDA */}
                 <div className="relative overflow-hidden rounded-[12px] sm:rounded-[16px] md:rounded-[20px] ring-1 ring-white/5 border border-[#FFD60A]/30 bg-black/15 h-auto lg:h-full min-h-[46svh] lg:min-h-0">
-                  {/* Carrusel de eventos */}
                   <LoginCarousel
                     images={Array.from({ length: 22 }, (_, i) => `/login/evento${i + 1}.jpg`)}
                     intervalMs={4000}
@@ -103,15 +128,11 @@ const LoginGD: React.FC = () => {
                     showControls
                     showIndicators
                   />
-
-                  {/* Logo sobre el carrusel */}
                   <img
                     src="/login/LOGO2.jpg"
                     alt="Logo"
                     className="absolute z-10 top-2 left-2 sm:top-4 sm:left-4 w-[clamp(56px,7.5vw,115px)] h-auto object-contain select-none pointer-events-none rounded-xl ring-1 ring-white/60 drop-shadow-[0_8px_18px_rgba(0,0,0,.45)] [filter:drop-shadow(0_0_.75px_#ffffffcc)]"
                   />
-
-                  {/* Slogan */}
                   <div className="absolute left-2 right-2 bottom-2 sm:left-4 sm:right-4 sm:bottom-4 md:left-4 md:right-auto md:max-w-[560px] z-10">
                     <div className="rounded-md bg-black/55 px-3 py-2 text-center md:text-left text-[#00e0b6] text-[12.5px] sm:text-sm font-medium shadow-[0_6px_20px_rgba(0,0,0,.25)]">
                       La mejor atención y sabor para tus invitados.
