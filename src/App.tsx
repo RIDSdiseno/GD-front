@@ -1,11 +1,14 @@
 // src/App.tsx
-
 import type { ReactElement } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+
 import LoginRids from "./host/login";
 import Dashboard from "./host/Dashboard";
 import Layout from "./host/Layout";
 import Users from "./host/Users";
+
+// Ajusta esta ruta si tu Leads está en otra carpeta (p.ej. "./pages/Leads")
+import Leads from "./host/leads";
 
 type Nivel = "ADMIN" | "SUB_ADMIN" | "USER";
 
@@ -33,7 +36,7 @@ function getUserNivel(): Nivel | null {
   }
 }
 
-/** Guarda que solo exige estar autenticado (para Dashboard, etc.) */
+/** Guarda que solo exige estar autenticado (Dashboard, Leads, etc.) */
 function AuthGuard({ children }: { children: ReactElement }) {
   const location = useLocation();
   const token = getToken();
@@ -65,7 +68,7 @@ export default function App() {
       {/* Públicas */}
       <Route path="/login" element={<LoginRids />} />
 
-      {/* Con layout (área autenticada) */}
+      {/* Área autenticada con layout */}
       <Route
         path="/"
         element={
@@ -77,6 +80,9 @@ export default function App() {
         {/* Dashboard: cualquier usuario autenticado */}
         <Route index element={<Dashboard />} />
 
+        {/* Leads: cualquier usuario autenticado (ADMIN, SUB_ADMIN, USER) */}
+        <Route path="leads" element={<Leads />} />
+
         {/* Users: solo ADMIN / SUB_ADMIN */}
         <Route
           path="users"
@@ -87,7 +93,7 @@ export default function App() {
           }
         />
 
-        {/* compatibilidad antigua */}
+        {/* Compatibilidad antigua */}
         <Route path="usuarios" element={<Navigate to="/users" replace />} />
       </Route>
 

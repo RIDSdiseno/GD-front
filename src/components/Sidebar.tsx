@@ -195,6 +195,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, onLogout }) =>
               <Item to="/users" icon={<FaUsers />} label="Usuarios" isOpen={isOpen} />
             </li>
             <li>
+              <Item to="/leads" icon={<FaUsers />} label="Leads" isOpen={isOpen} />
+            </li>
+            <li>
               <Item to="/settings" icon={<FaCogs />} label="Configuración" isOpen={isOpen} />
             </li>
           </ul>
