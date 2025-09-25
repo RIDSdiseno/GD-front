@@ -1,5 +1,5 @@
 // src/App.tsx
-import React from "react";
+
 import type { ReactElement } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LoginRids from "./host/login";
