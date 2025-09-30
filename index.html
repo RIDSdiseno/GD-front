@@ -2,23 +2,100 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CRM GDiamond</title>
 
     <!-- Favicon / Iconos -->
     <link rel="icon" type="image/jpeg" href="/login/LOGO2.jpg" />
     <link rel="apple-touch-icon" href="/login/LOGO2.jpg" />
 
-    <!-- (Opcional) Social preview -->
+    <!-- Social preview (opcional) -->
     <meta property="og:title" content="CRM GDiamond" />
     <meta property="og:image" content="/login/LOGO2.jpg" />
-    <meta name="theme-color" content="#000000" />
+
+    <!-- Metas base; el script las actualizará según el modo efectivo -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0f1117" />
+
+    <!-- iOS PWA (opcional) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Anti-flash: fondo base; el script ajusta la clase .dark antes del primer paint -->
+    <style>
+      html { background:#0f1117; }
+      html:not(.dark) { background:#ffffff; }
+    </style>
+
+    <!-- Inicialización de tema ANTES del primer paint -->
+    <script>
+      (function () {
+        // ---------- CONFIG ----------
+        var DEFAULT_PREF = 'dark';   // 'dark' | 'light' | 'system'
+        var KEY = 'theme';           // localStorage key
+        // ----------------------------
+
+        var mql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+
+        function setMeta(name, value) {
+          var el = document.querySelector('meta[name="' + name + '"]');
+          if (!el) { el = document.createElement('meta'); el.name = name; document.head.appendChild(el); }
+          el.content = value;
+        }
+
+        function getPref() {
+          try { return localStorage.getItem(KEY) || null; } catch(_) { return null; }
+        }
+
+        function resolveDefault(pref) {
+          if (pref === 'light' || pref === 'dark' || pref === 'system') return pref;
+          return DEFAULT_PREF;
+        }
+
+        function effectiveFrom(pref) {
+          var p = resolveDefault(pref);
+          if (p === 'light' || p === 'dark') return p;
+          return (mql && mql.matches) ? 'dark' : 'light';
+        }
+
+        function apply(effective) {
+          var isDark = (effective === 'dark');
+          var root = document.documentElement;
+
+          // Clase que usa Tailwind
+          root.classList.toggle('dark', isDark);
+
+          // Evita que el navegador oscurezca/aclare inputs/scrollbars por su cuenta
+          root.style.colorScheme = isDark ? 'dark' : 'light';
+
+          // Metas para UI del navegador
+          setMeta('color-scheme', isDark ? 'dark' : 'light');
+          setMeta('theme-color', isDark ? '#0f1117' : '#ffffff');
+        }
+
+        // 1) Aplicar antes del primer paint
+        apply(effectiveFrom(getPref()));
+
+        // 2) Seguir cambios del SO sólo si el usuario eligió "system"
+        function onSystemChange() {
+          var pref = resolveDefault(getPref());
+          if (pref !== 'system') return;
+          apply(effectiveFrom('system'));
+        }
+        if (mql && mql.addEventListener) mql.addEventListener('change', onSystemChange);
+        else if (mql && mql.addListener) mql.addListener(onSystemChange); // Safari viejo
+
+        // 3) Reaccionar a cambios de localStorage (si toggles el tema desde la app)
+        window.addEventListener('storage', function (e) {
+          if (e.key === KEY) apply(effectiveFrom(getPref()));
+        });
+      })();
+    </script>
   </head>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <noscript>Esta aplicación requiere JavaScript habilitado.</noscript>
   </body>
 </html>

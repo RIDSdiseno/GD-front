@@ -1,22 +1,548 @@
 @import "tailwindcss";
 
-/* Reutilizables: usa @layer utilities/components en v4 */
-@layer utilities {
-  .card { @apply rounded-2xl border border-zinc-200/70 bg-white/90 shadow-sm backdrop-blur; }
-  .card-body { @apply p-5 sm:p-6; }
-  .badge { @apply inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-xs text-zinc-600; }
+/* ───────── COMPONENTES ───────── */
+@layer components {
+  /* Contenedor general y superficies */
+  .page-shell { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-10; }
+
+  /* — LIGHT: superficies 100% opacas, sin blur — */
+  :root:not(.dark) .page-surface {
+    background-color: #ffffff !important;
+    border: 1px solid rgba(0,0,0,.06) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,.06) !important;
+    border-radius: 16px;
+    padding: 16px;
+    color-scheme: light;
+  }
+
+  /* — DARK: superficie con tono sólido y sombra — */
+  .dark .page-surface {
+    background-color: rgba(20,22,27,.88) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45) !important;
+    border-radius: 16px;
+    padding: 16px;
+    color-scheme: dark;
+  }
+
+  /* Campo de búsqueda (opaco en claro) */
+  .field {
+    @apply w-full rounded-2xl border pr-3 py-3 outline-none transition-colors;
+    background-color: #ffffff !important;
+    color: #0f172a !important;            /* slate-900 */
+    border-color: #e5e7eb !important;     /* gray-200 */
+  }
+  .field::placeholder { color: #6b7280 !important; } /* gray-500 */
+  .dark .field {
+    background-color: rgba(28,30,37,.85) !important;
+    color: #fff !important;
+    border-color: rgba(255,255,255,.12) !important;
+  }
+  .dark .field::placeholder { color: rgba(255,255,255,.78) !important; }
+
+  /* Tabla */
+  /* — LIGHT: opaca y con texto oscuro bien contrastado — */
+  :root:not(.dark) .users-shell {
+    background-color: #ffffff !important;
+    border: 1px solid rgba(0,0,0,.06) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,.06) !important;
+    border-radius: 16px;
+  }
+  :root:not(.dark) .users-thead {
+    background-color: #f6f7f9 !important;
+    color: #111827 !important;            /* gray-900 */
+    border-bottom: 1px solid rgba(0,0,0,.06) !important;
+  }
+  :root:not(.dark) .users-shell td,
+  :root:not(.dark) .users-shell th {
+    color: #0b1220 !important;            /* bien oscuro */
+    background-color: transparent !important;
+  }
+
+  /* — DARK: tonos ajustados — */
+  .dark .users-shell {
+    background-color: rgba(23,25,31,.88) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45) !important;
+    border-radius: 16px;
+  }
+  .dark .users-thead {
+    background-color: rgba(28,30,37,.92) !important;
+    color: rgba(255,255,255,.92) !important;
+    border-bottom: 1px solid rgba(255,255,255,.12) !important;
+  }
+  .dark .users-shell td { color: rgba(255,255,255,.96) !important; }
+
+  /* Contador */
+  :root:not(.dark) .users-counter {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid rgba(0,0,0,.06) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,.06) !important;
+    border-radius: 12px;
+  }
+  .dark .users-counter {
+    background-color: rgba(28,30,37,.90) !important;
+    color: rgba(255,255,255,.92) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    box-shadow: 0 0 14px rgba(0,0,0,.35) !important;
+    border-radius: 12px;
+  }
 }
 
-/* Globales: el gradiente va como CSS normal (no @apply arbitrary) */
+/* ───────── BASE / FONDO ───────── */
 @layer base {
+  :root { color-scheme: light dark; }
+  html, body { @apply min-h-screen; }
+
+  /* LIGHT: imagen visible pero superficies opacas */
   body {
-    @apply bg-zinc-100;
+    @apply bg-zinc-100 text-zinc-900;
     background-image:
-      radial-gradient(1200px 600px at 10% -10%, rgba(168,230,207,0.133) 0%, transparent 60%),
-      radial-gradient(900px 500px at 110% 0%, rgba(255,140,102,0.125) 0%, transparent 55%);
+      radial-gradient(1200px 600px at 10% -10%, rgba(168,230,207,0.12) 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 0%, rgba(255,140,102,0.12) 0%, transparent 55%),
+      url('/login/FONDOLOGIN.PNG');
+    background-size: auto, auto, cover;
+    background-position: center center;
     background-repeat: no-repeat;
     background-attachment: fixed;
   }
+
+  /* DARK */
+  .dark body {
+    @apply text-zinc-50;
+    background-color: #0f1117;
+    background-image:
+      radial-gradient(1200px 600px at 10% -10%, rgba(0,224,182,0.08) 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 0%, rgba(255,214,10,0.06) 0%, transparent 55%),
+      url('/login/FONDOLOGIN.PNG');
+    background-size: auto, auto, cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-blend-mode: normal, normal, multiply;
+  }
 }
+
+/* Hover en dark (sutil) */
+.dark .users-shell tr:hover { background-color: rgba(255,255,255,.05) !important; }
+
+/* Asegurar transparencia interna de la tabla (sin blancos fantasma) */
+.users-shell table,
+.users-shell thead,
+.users-shell tbody,
+.users-shell tr,
+.users-shell th,
+.users-shell td { background-color: transparent !important; }
+
+/* === Botones con alto contraste (no se lavan) === */
+@layer components {
+  .btn { @apply inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 border font-semibold transition; }
+
+  /* Editar (cyan) */
+  .btn--cyan {
+    @apply bg-cyan-100 border-cyan-300 text-cyan-900 hover:bg-cyan-200 hover:border-cyan-400;
+    color-scheme: light; /* evita “auto-darkening” en claro */
+  }
+  .dark .btn--cyan {
+    @apply bg-cyan-400/10 border-cyan-300/60 text-cyan-100 hover:bg-cyan-400/20;
+    color-scheme: dark;
+  }
+
+  /* Eliminar (rose) */
+  .btn--rose {
+    @apply bg-rose-100 border-rose-300 text-rose-900 hover:bg-rose-200 hover:border-rose-400;
+    color-scheme: light;
+  }
+  .dark .btn--rose {
+    @apply bg-rose-400/10 border-rose-300/60 text-rose-100 hover:bg-rose-400/20;
+    color-scheme: dark;
+  }
+}
+
+/* Pills (roles/estados) */
+@layer components {
+  .pill {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide border align-middle;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.03);
+  }
+
+  /* Roles */
+  .pill--role-admin { background:#FFF4BF; color:#7A5800; border-color:#F7E08A; }
+  .pill--role-sub   { background:#CFFAFE; color:#0C4A6E; border-color:#A5F3FC; }
+  .pill--role-user  { background:#E5E7EB; color:#111827; border-color:#D1D5DB; }
+
+  /* Estados */
+  .pill--ok   { background:#D1FAE5; color:#065F46; border-color:#A7F3D0; }
+  .pill--off  { background:#FEE2E2; color:#991B1B; border-color:#FECACA; }
+
+  /* Dark overrides */
+  .dark .pill { box-shadow:none; }
+  .dark .pill--role-admin { background:rgba(250,204,21,.15); color:#FDE68A; border-color:rgba(250,204,21,.45); }
+  .dark .pill--role-sub   { background:rgba(34,211,238,.15);  color:#A5F3FC; border-color:rgba(34,211,238,.45); }
+  .dark .pill--role-user  { background:rgba(255,255,255,.08); color:#E5E7EB; border-color:rgba(255,255,255,.25); }
+  .dark .pill--ok  { background:rgba(16,185,129,.15); color:#A7F3D0; border-color:rgba(16,185,129,.45); }
+  .dark .pill--off { background:rgba(244,63,94,.15);  color:#FCA5A5; border-color:rgba(244,63,94,.45); }
+}
+
+/* Tinta fuerte y botón “Nuevo Usuario” */
+@layer components {
+  .force-ink {
+    color: #0f172a !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,.35);
+    mix-blend-mode: normal;
+  }
+  .dark .force-ink {
+    color: #ffffff !important;
+    text-shadow: none;
+  }
+
+  .btn-new {
+    @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold border transition;
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    box-shadow: 0 1px 0 rgba(0,0,0,.03);
+    mix-blend-mode: normal;
+  }
+  .btn-new:hover { background-color: #dbeafe; }
+  .btn-new:focus { outline: 2px solid #bfdbfe; outline-offset: 2px; }
+  .btn-new:disabled { opacity: .6; cursor: not-allowed; }
+
+  .dark .btn-new {
+    background-color: rgba(59,130,246,.12);
+    color: #e7f0ff;
+    border-color: rgba(59,130,246,.45);
+  }
+  .dark .btn-new:hover { background-color: rgba(59,130,246,.20); }
+  .dark .btn-new:focus  { outline: 2px solid rgba(59,130,246,.5); }
+}
+
+/* ───────── HEADER opaco con esquema fijo ───────── */
+/* Añade className="app-header" a tu <header> */
+.app-header {
+  background: #ffffff !important;
+  color: #0b1220 !important;
+  border-bottom: 1px solid rgba(0,0,0,.06) !important;
+  color-scheme: light;              /* evita auto-darkening */
+  isolation: isolate;               /* aísla del fondo con imagen */
+}
+.dark .app-header {
+  background: #0f1117 !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255,255,255,.12) !important;
+  color-scheme: dark;
+}
+
+/* === Header: tinta fija para que no se lave en claro/oscuro === */
+.app-header { color-scheme: light; }
+.dark .app-header { color-scheme: dark; }
+
+/* Todo lo que lleve .nav-ink (texto + iconos) mantiene contraste */
+.app-header .nav-ink,
+.app-header .nav-ink * {
+  color: #0b1220 !important;       /* muy oscuro en claro */
+  fill:  #0b1220 !important;
+}
+.dark .app-header .nav-ink,
+.dark .app-header .nav-ink * {
+  color: #e5e7eb !important;        /* muy claro en oscuro */
+  fill:  #e5e7eb !important;
+}
+
+/* Botones/acciones que dependan de la tinta del header */
+.app-header .btn-ink { color: #0b1220 !important; }
+.dark .app-header .btn-ink { color: #e5e7eb !important; }
+
+
+/* Heredar color correctamente dentro del header */
+.app-header a,
+.app-header .nav-item,
+.app-header .nav-item * { color: inherit !important; }
+
+/* Botones del header sin mezcla con el fondo */
+.app-header .btn,
+.app-header button { mix-blend-mode: normal; }
+
+/* Tinta por tarjeta de ConfigResumen (evita herencias) */
+.config-card { color: #0b1220 !important; }          /* claro */
+.dark .config-card { color: #ffffff !important; }    /* oscuro */
+
+/* === Avatar monograma: visible en claro/oscuro y por encima de auras === */
+.avatar { position: relative; display: inline-block; isolation: isolate; }
+
+.avatar__aura {
+  position: absolute; inset: -10px; border-radius: 14px;
+  filter: blur(18px); pointer-events: none; opacity: .9;
+  background: linear-gradient(135deg, rgba(255,214,10,.35), rgba(34,211,238,.30) 60%, transparent);
+}
+
+.dark .avatar__aura {
+  background: linear-gradient(135deg, rgba(255,214,10,.45), rgba(34,211,238,.35) 60%, transparent);
+}
+
+.avatar__tile {
+  position: relative; z-index: 1;
+  width: 56px; height: 56px;           /* 14 * 4 = 56px (w-14/h-14) */
+  display: grid; place-items: center;
+  border-radius: 12px; font-weight: 800; font-size: 18px; line-height: 1;
+  background: #eef2ff;                 /* claro, suave */
+  color: #0b1220;                      /* tinta negra en claro */
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 1px 0 rgba(0,0,0,.05);
+}
+
+.dark .avatar__tile {
+  background: rgba(255,255,255,.10);   /* translúcido en oscuro */
+  color: #ffffff;                      /* tinta blanca en oscuro */
+  border: 1px solid rgba(255,255,255,.15);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset;
+}
+
+/* === Avatar blindado (color y fondo con !important) === */
+.app-header .avatar { position: relative; display: inline-block; isolation: isolate; }
+
+.app-header .avatar__aura {
+  position: absolute; inset: -10px; border-radius: 14px; pointer-events: none;
+  filter: blur(18px); opacity: .22;                               /* más sutil en claro */
+  background: radial-gradient(40% 40% at 50% 50%, rgba(2,132,199,.22), transparent 65%);
+}
+.dark .app-header .avatar__aura {
+  opacity: .45;
+  background: radial-gradient(40% 40% at 50% 50%, rgba(2,132,199,.35), transparent 65%);
+}
+
+.app-header .avatar__tile {
+  position: relative; z-index: 1;
+  width: 56px; height: 56px; display: grid; place-items: center;
+  border-radius: 12px; font: 800 18px/1 var(--tw-font-sans, ui-sans-serif, system-ui);
+  background: #e9f0ff !important;                 /* 💡 fondo claro real */
+  color: #0b1220 !important;                      /* 💡 texto negro SIEMPRE en claro */
+  border: 1px solid rgba(0,0,0,.10) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08) !important;
+}
+
+.dark .app-header .avatar__tile {
+  background: rgba(255,255,255,.10) !important;   /* 💡 translúcido en oscuro */
+  color: #ffffff !important;                      /* 💡 texto blanco SIEMPRE en oscuro */
+  border: 1px solid rgba(255,255,255,.18) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset !important;
+}
+
+/* ===== LEADS (scope local, no afecta el resto) ===== */
+.leads { position: relative; }
+
+/* Tinta base (negra en claro, blanca en oscuro) */
+:root:not(.dark) .leads,
+:root:not(.dark) .leads * { color: #0b1220 !important; }
+.dark .leads,
+.dark .leads * { color: #ffffff !important; }
+
+/* No tocar el % DENTRO de la barra (siempre blanco con sombra) */
+.leads .inbar { color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,.55); }
+
+/* Píldoras */
+:root:not(.dark) .leads .pill {
+  background: #f3f4f6;              /* neutral-100 */
+  border: 1px solid #e5e7eb;        /* neutral-200 */
+  color: #0b1220 !important;        /* negro */
+}
+.dark .leads .pill {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.15);
+  color: #ffffff !important;
+}
+
+/* Píldora más tenue para porcentaje */
+:root:not(.dark) .leads .pill--muted { color: #374151 !important; } /* neutral-700 */
+.dark .leads .pill--muted { color: rgba(255,255,255,.7) !important; }
+
+/* Pista de la barra */
+:root:not(.dark) .leads .track {
+  background: #e5e7eb;              /* neutral-200 */
+  border: 1px solid #d1d5db;        /* neutral-300 */
+  box-shadow: 0 0 0 1px rgba(0,0,0,.02) inset;
+}
+.dark .leads .track {
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset;
+}
+
+/* ===== LEADS (LeadsEstado) ===== */
+.leads { position: relative; }
+
+/* Tinta base */
+:root:not(.dark) .leads,
+:root:not(.dark) .leads * { color: #0b1220 !important; }
+.dark .leads,
+.dark .leads * { color: #ffffff !important; }
+
+/* % dentro de la barra: siempre blanco con sombra */
+.leads .inbar { color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,.55); }
+
+/* Píldoras (valor y %) */
+:root:not(.dark) .leads .pill {
+  background: #f3f4f6; border: 1px solid #e5e7eb; color: #0b1220 !important; border-radius: 9999px;
+}
+.dark .leads .pill {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+  color: #ffffff !important; backdrop-filter: blur(4px);
+}
+:root:not(.dark) .leads .pill--muted { color: #374151 !important; }  /* % en leyenda */
+.dark .leads .pill--muted { color: rgba(255,255,255,.7) !important; }
+
+/* Pista de la barra */
+:root:not(.dark) .leads .track {
+  background: #e5e7eb; border: 1px solid #d1d5db; border-radius: 9999px; box-shadow: 0 0 0 1px rgba(0,0,0,.02) inset;
+}
+.dark .leads .track {
+  background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.10);
+  border-radius: 9999px; backdrop-filter: blur(4px); box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset;
+}
+
+
+/* ===== KPI (KpiProgreso) ===== */
+.kpi { position: relative; }
+
+/* Tinta base (negra en claro, blanca en oscuro) */
+:root:not(.dark) .kpi,
+:root:not(.dark) .kpi * { color: #0b1220 !important; }
+.dark .kpi,
+.dark .kpi * { color: #ffffff !important; }
+
+/* Excepción: número con gradiente debe ser transparente */
+.kpi .big-number { color: transparent !important; -webkit-text-fill-color: transparent; }
+
+/* Píldoras (total etapas y % progreso) */
+:root:not(.dark) .kpi .pill {
+  background: #f3f4f6; border: 1px solid #e5e7eb; color: #0b1220 !important; border-radius: 9999px;
+}
+.dark .kpi .pill {
+  background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.15);
+  color: #ffffff !important; backdrop-filter: blur(4px);
+}
+
+/* Pista de la barra de progreso */
+:root:not(.dark) .kpi .track {
+  background: #e5e7eb; border: 1px solid #d1d5db; border-radius: 9999px; box-shadow: 0 0 0 1px rgba(0,0,0,.02) inset;
+}
+.dark .kpi .track {
+  background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.10);
+  border-radius: 9999px; backdrop-filter: blur(4px); box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset;
+}
+
+/* Relleno (la barra coloreada) — el color lo pone el componente con el gradiente */
+.kpi .fill { height: 100%; border-radius: 9999px; }
+
+/* ─── Botones del Header (chips) ─── */
+.app-header .chip {
+  display: inline-flex; align-items: center; gap: .5rem;
+  border-radius: .75rem; /* rounded-xl */
+  padding: .5rem .75rem; /* px-3 py-2 */
+  font-weight: 600; font-size: .875rem; line-height: 1rem; /* text-sm */
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+  mix-blend-mode: normal;
+  border: 1px solid;
+}
+
+/* LIGHT */
+html:not(.dark) .app-header .chip {
+  background: #f3f4f6;           /* neutral-100 */
+  border-color: #e5e7eb;         /* neutral-200 */
+  color: #0b1220;                /* tinta oscura */
+}
+html:not(.dark) .app-header .chip:hover {
+  background: #e5e7eb;           /* neutral-200 */
+}
+html:not(.dark) .app-header .chip--active {
+  background: #e5e7eb;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.06) inset;
+}
+
+/* DARK */
+.dark .app-header .chip {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.18);
+  color: #e5e7eb;
+}
+.dark .app-header .chip:hover {
+  background: rgba(255,255,255,.14);
+}
+.dark .app-header .chip--active {
+  background: rgba(255,255,255,.18);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset;
+}
+
+/* Botón icono pequeño (hamburger / sol / luna) */
+.app-header .iconbtn {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:.5rem; border-radius:.75rem; border:1px solid;
+  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+  mix-blend-mode: normal;
+}
+html:not(.dark) .app-header .iconbtn {
+  background:#f3f4f6; border-color:#e5e7eb; color:#0b1220;
+}
+html:not(.dark) .app-header .iconbtn:hover { background:#e5e7eb; }
+
+.dark .app-header .iconbtn {
+  background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.18); color:#e5e7eb;
+}
+.dark .app-header .iconbtn:hover { background:rgba(255,255,255,.14); }
+
+/* Estado foco accesible */
+.app-header .chip:focus-visible,
+.app-header .iconbtn:focus-visible {
+  outline: 2px solid rgba(59,130,246,.7); /* azul */
+  outline-offset: 2px;
+}
+
+/* NavItem activo dentro del header */
+.app-header .navitem {
+  display:inline-flex; align-items:center; gap:.5rem;
+  border-radius:.75rem; padding:.5rem .75rem; font-weight:600; font-size:.875rem;
+  border:1px solid transparent; transition: background-color .15s ease, border-color .15s ease;
+}
+html:not(.dark) .app-header .navitem:hover { background:#f3f4f6; }
+.dark .app-header .navitem:hover { background:rgba(255,255,255,.08); }
+
+html:not(.dark) .app-header .navitem--active {
+  background:#e5e7eb; border-color:#e5e7eb;
+}
+.dark .app-header .navitem--active {
+  background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.18);
+}
+
+/* Asegura que iconos/texto sigan la tinta */
+.app-header .nav-ink, .app-header .nav-ink * { color: inherit; fill: inherit; }
+
+/* ==== ConfigResumen: forzar fondo oscuro en modo dark ==== */
+@layer components {
+  /* Fondo claro por defecto (OK en light) */
+  .config-card {
+    /* si ya lo tienes, no pasa nada; esto establece base en light */
+    background-color: #ffffff;
+  }
+
+  /* Fondo oscuro “glass” + borde sutil + texto blanco en dark */
+  .dark .config-card {
+    background-color: rgba(23,25,31,.86) !important;  /* <- fuerza oscuro */
+    border-color: rgba(255,255,255,.12) !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45) !important;
+    backdrop-filter: blur(10px);
+    color: #ffffff !important; /* fallback si algo hereda mal */
+  }
+
+  /* Tokens de texto dentro de la card (aseguran blanco en dark) */
+  .card-label  { color: #334155; }             /* slate-700 en light */
+  .dark .card-label  { color: rgba(255,255,255,.80) !important; }
+
+  .card-number { color: #0f172a; }             /* slate-900 en light */
+  .dark .card-number { color: #ffffff !important; }
+}
+
+
 
 

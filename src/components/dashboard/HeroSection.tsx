@@ -9,58 +9,118 @@ type Props = {
   onLogout?: () => void;
 };
 
-const HeroSection: React.FC<Props> = ({ userName, initials, onNewLead, onSearch, onLogout }) => {
-  const h = new Date().getHours();
-  const saludo = h < 12 ? "¡Buenos días" : h < 19 ? "¡Buenas tardes" : "¡Buenas noches";
+/** Avatar monograma anti-herencia:
+ *  - Dibuja SVG con fill de fondo y texto explícitos.
+ *  - Detecta el tema leyendo <html>.classList.contains('dark')
+ *  - NO depende de Tailwind para color del texto/fondo (no lo “blanquea” nada).
+ */
+const Avatar: React.FC<{ initials: string; title?: string }> = ({ initials, title }) => {
+  const isDark =
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark");
+
+  const bg = isDark ? "rgba(255,255,255,0.10)" : "#e9f0ff"; // fondo
+  const border = isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.10)";
+  const txt = isDark ? "#ffffff" : "#0b1220"; // texto SIEMPRE correcto
 
   return (
-    <section className="relative">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between text-white">
+    <div className="relative isolate" title={title} aria-label={`Usuario: ${title ?? initials}`}>
+      {/* Aura decorativa */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -inset-3 rounded-2xl blur-xl"
+        style={{
+          background: isDark
+            ? "radial-gradient(40% 40% at 50% 50%, rgba(2,132,199,.35), transparent 65%)"
+            : "radial-gradient(40% 40% at 50% 50%, rgba(2,132,199,.22), transparent 65%)",
+        }}
+      />
+      {/* Tile+texto en SVG (colores inline, no heredan) */}
+      <svg
+        width={56}
+        height={56}
+        viewBox="0 0 56 56"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ display: "block", borderRadius: 12, overflow: "hidden" }}
+      >
+        <rect x="0.5" y="0.5" width="55" height="55" rx="12"
+              fill={bg} stroke={border} />
+        <text
+          x="50%" y="50%"
+          dominantBaseline="middle"
+          textAnchor="middle"
+          fontFamily="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Noto Sans"
+          fontWeight={800}
+          fontSize={18}
+          fill={txt}   /* 👈 color del texto fijado aquí */
+        >
+          {initials || "?"}
+        </text>
+      </svg>
+    </div>
+  );
+};
+
+const HeroSection: React.FC<Props> = ({ userName, initials, onNewLead, onSearch, onLogout }) => {
+  const h = new Date().getHours();
+  const saludo = h < 12 ? "¡Buenos días!" : h < 19 ? "¡Buenas tardes!" : "¡Buenas noches!";
+
+  return (
+    <section className="relative antialiased">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {/* Izquierda: avatar + textos */}
         <div className="flex items-center gap-4 md:gap-5">
-          {/* Aura + avatar */}
-          <div className="relative">
-            <div className="pointer-events-none absolute -inset-2 rounded-2xl blur-xl bg-gradient-to-tr from-yellow-300/40 via-cyan-300/30 to-transparent" />
-            <div className="grid size-14 place-items-center rounded-2xl bg-white/10 border border-white/15 ring-1 ring-white/10 text-white font-extrabold text-lg backdrop-blur-md">
-              {initials}
-            </div>
-          </div>
+          <Avatar initials={initials} title={userName} />
 
           <div>
             <div className="inline-flex items-center gap-2">
-              <span className="text-xs md:text-sm text-white/70">{saludo}</span>
-              <span className="h-1 w-1 rounded-full bg-yellow-300/80 shadow-[0_0_10px_rgba(255,214,10,.9)]" />
+              <span className="force-ink text-xs md:text-sm">{saludo}</span>
+              <span className="h-1 w-1 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(255,214,10,.8)]" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-tight drop-shadow-[0_0_14px_rgba(255,214,10,.35)]">
+
+            <h1 className="force-ink text-2xl md:text-3xl font-extrabold tracking-tight leading-tight">
               {userName}
             </h1>
-            <p className="text-[13px] md:text-sm text-white/70">
+
+            <p className="force-ink/80 text-[13px] md:text-sm">
               Resumen de operación (hoy) y estado del proyecto.
             </p>
           </div>
         </div>
 
-        {/* Derecha: acciones */}
+        {/* Derecha: acciones – botones sólidos con texto blanco */}
         <div className="flex items-center gap-2">
           <button
             onClick={onNewLead}
-            className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/50 bg-cyan-400/10 px-3.5 py-2 text-sm font-semibold text-cyan-100 shadow-[0_0_16px_rgba(34,211,238,.35)] hover:bg-cyan-400/20 hover:shadow-[0_0_22px_rgba(34,211,238,.55)] focus:outline-none focus:ring-2 focus:ring-cyan-300/50 transition"
+            disabled={!onNewLead}
+            className="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-white
+                       bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300
+                       disabled:opacity-60 disabled:cursor-not-allowed
+                       dark:bg-cyan-500 dark:hover:bg-cyan-600 dark:focus:ring-cyan-400 transition"
           >
-            <Plus className="size-4" /> Nuevo lead
+            <Plus className="h-4 w-4" /> Nuevo lead
           </button>
 
           <button
             onClick={onSearch}
-            className="inline-flex items-center gap-2 rounded-xl border border-yellow-300/50 bg-yellow-400/10 px-3.5 py-2 text-sm font-semibold text-yellow-100 shadow-[0_0_16px_rgba(255,214,10,.35)] hover:bg-yellow-400/20 hover:shadow-[0_0_22px_rgba(255,214,10,.55)] focus:outline-none focus:ring-2 focus:ring-yellow-300/50 transition"
+            disabled={!onSearch}
+            className="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-white
+                       bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-300
+                       disabled:opacity-60 disabled:cursor-not-allowed
+                       dark:bg-amber-500 dark:hover:bg-amber-600 dark:focus:ring-amber-400 transition"
           >
-            <Search className="size-4" /> Buscar
+            <Search className="h-4 w-4" /> Buscar
           </button>
 
           <button
             onClick={onLogout}
-            className="inline-flex items-center gap-2 rounded-xl border border-rose-300/50 bg-rose-400/10 px-3.5 py-2 text-sm font-bold text-rose-100 shadow-[0_0_16px_rgba(244,63,94,.35)] hover:bg-rose-400/20 hover:shadow-[0_0_22px_rgba(244,63,94,.55)] focus:outline-none focus:ring-2 focus:ring-rose-300/50 transition"
+            disabled={!onLogout}
+            className="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-white
+                       bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300
+                       disabled:opacity-60 disabled:cursor-not-allowed
+                       dark:bg-rose-500 dark:hover:bg-rose-600 dark:focus:ring-rose-400 transition"
           >
-            <LogOut className="size-4" /> Salir
+            <LogOut className="h-4 w-4" /> Salir
           </button>
         </div>
       </div>

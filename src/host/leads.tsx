@@ -1,8 +1,9 @@
 // src/pages/Leads.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { Loader2, Plus, Search, RefreshCw, ChevronDown } from "lucide-react";
+import { Loader2, Plus, Search, RefreshCw, ChevronDown, Check } from "lucide-react";
 import LeadCreateModal, { type LeadCatalogs } from "../components/LeadCreateModal";
+import LeadEditModal, { type LeadUpdatePayload, type LeadRow } from "../components/LeadEditModal";
 
 /** ========= Tipos ========= */
 type Catalogo = { id: number; nombre: string };
@@ -106,8 +107,8 @@ const Leads: React.FC = () => {
   const [comunas, setComunas] = useState<Catalogo[]>([]);
 
   // Tabla / filtros
-  const [search, setSearch] = useState("");              // texto libre del input
-  const q = useDebouncedValue(search, 300);              // valor “debounceado” para consultas
+  const [search, setSearch] = useState("");
+  const q = useDebouncedValue(search, 300);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [orderBy, setOrderBy] = useState<"updatedAt" | "createdAt" | "fechaIngreso">("updatedAt");
@@ -116,8 +117,12 @@ const Leads: React.FC = () => {
   const [rows, setRows] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
 
-  // Modal crear
+  // Modales
   const [openCreate, setOpenCreate] = useState(false);
+  const [editing, setEditing] = useState<Lead | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingLoading, setDeletingLoading] = useState(false);
+  const [deletingMessage, setDeletingMessage] = useState<string | null>(null);
 
   // AbortController para cancelar la búsqueda anterior
   const reqCtrlRef = useRef<AbortController | null>(null);
@@ -146,10 +151,9 @@ const Leads: React.FC = () => {
     })();
   }, []);
 
-  // Cargar leads (lista) — usando fetch para soportar signal sin errores de tipos
+  // Cargar leads (lista)
   const loadList = useMemo(
     () => async () => {
-      // cancela petición anterior (si existía)
       reqCtrlRef.current?.abort();
       const ctrl = new AbortController();
       reqCtrlRef.current = ctrl;
@@ -194,7 +198,7 @@ const Leads: React.FC = () => {
         setRows(data.leads ?? []);
         setTotal(data.total ?? 0);
       } catch (err) {
-        if (isDOMAbort(err)) return; // se canceló por tecleo: ignorar
+        if (isDOMAbort(err)) return;
         setToast(`Error cargando leads: ${extractErrorMessage(err)}`);
       } finally {
         if (!ctrl.signal.aborted) setLoading(false);
@@ -207,7 +211,7 @@ const Leads: React.FC = () => {
     void loadList();
   }, [loadList]);
 
-  // Acciones (usan axios normal)
+  // Acciones (axios)
   const changeEstadoTo = async (leadId: number, nombre: string) => {
     try {
       await api.patch(`/leads/${leadId}/estado`, { estadoNombre: nombre });
@@ -218,17 +222,71 @@ const Leads: React.FC = () => {
     }
   };
 
-  const assignToUser = async (leadId: number, uid: number) => {
+  // === Asignar MARCA ===
+  const assignMarca = async (leadId: number, marcaNombre: string) => {
     try {
-      await api.patch(`/leads/${leadId}/asignar`, { usuarioId: uid });
-      setToast(`Lead #${leadId} asignado a usuario ${uid}`);
+      await api.patch(`/leads/${leadId}`, { marcaNombre });
+      setToast(`Lead #${leadId} asignado a marca "${marcaNombre}"`);
       await loadList();
     } catch (err) {
-      setToast(`No se pudo asignar: ${extractErrorMessage(err)}`);
+      setToast(`No se pudo asignar marca: ${extractErrorMessage(err)}`);
+    }
+  };
+
+  // === Editar ===
+  const openEdit = (lead: Lead) => setEditing(lead);
+  const submitEdit = async (id: number, payload: LeadUpdatePayload) => {
+    try {
+      await api.patch(`/leads/${id}`, payload);
+      setToast(`Lead #${id} actualizado`);
+      setEditing(null);
+      await loadList();
+    } catch (err) {
+      setToast(`No se pudo actualizar: ${extractErrorMessage(err)}`);
+    }
+  };
+
+  // === Eliminar ===
+  const confirmDelete = (id: number) => {
+    setDeletingId(id);
+    setDeletingLoading(false);
+    setDeletingMessage(null);
+  };
+
+  const doDelete = async () => {
+    if (!deletingId) return;
+    try {
+      setDeletingLoading(true);
+      setDeletingMessage("Eliminando…");
+      await api.delete(`/leads/${deletingId}`);
+      setDeletingLoading(false);
+      setDeletingMessage("lead eliminado correctamente");
+      const wasLast = rows.length === 1;
+      if (wasLast && page > 1) setPage((p) => p - 1);
+      await loadList();
+      // cerrar después de un pequeño delay para que el usuario vea el mensaje
+      setTimeout(() => {
+        setDeletingId(null);
+        setDeletingMessage(null);
+      }, 1200);
+    } catch (err) {
+      setDeletingLoading(false);
+      setDeletingMessage(null);
+      setToast(`No se pudo eliminar: ${extractErrorMessage(err)}`);
     }
   };
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  // Catálogos tipados para pasar a los modales (sin any)
+  const catalogsForModals: LeadCatalogs = {
+    marcas,
+    categorias,
+    tipos,
+    estados,
+    segmentos,
+    comunas,
+  };
 
   return (
     <div className="relative h-[100svh] overflow-hidden">
@@ -279,7 +337,7 @@ const Leads: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Buscar por nombre, email, teléfono, código o cotización…"
-              className="w-full rounded-2xl bg-white/5 text-white placeholder-white/60 border border-white/10 focus:border-yellow-300/70 focus:ring-2 focus:ring-yellow-300/40 pl-10 pr-9 py-3 outline-none transition backdrop-blur-xl"
+              className="w-full rounded-2xl bg-white/5 text-white placeholder-white/60 border border-white/10 focus:border-yellow-300/70 focus:ring-2 focus:ring-yellow-300/40 pl-10 pr-9 py-3 outline-none transición backdrop-blur-xl"
             />
             {loading && (
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70">
@@ -387,13 +445,32 @@ const Leads: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <RowActions
-                          leadId={r.id}
-                          estados={estados}
-                          currentEstado={r.estado?.nombre}
-                          onPickEstado={changeEstadoTo}
-                          onAssign={assignToUser}
-                        />
+                        <div className="flex items-center gap-2">
+                          <RowActions
+                            leadId={r.id}
+                            estados={estados}
+                            marcas={marcas}
+                            currentEstado={r.estado?.nombre}
+                            onPickEstado={changeEstadoTo}
+                            onAssignMarca={assignMarca}
+                          />
+                          <button
+                            type="button"
+                            className="rounded-lg border border-blue-300/50 bg-blue-400/10 px-3 py-1.5 text-xs text-blue-100 hover:bg-blue-400/20 shadow-[0_0_14px_rgba(59,130,246,.35)]"
+                            onClick={() => openEdit(r)}
+                            title="Editar lead"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-lg border border-rose-300/50 bg-rose-400/10 px-3 py-1.5 text-xs text-rose-100 hover:bg-rose-400/20 shadow-[0_0_14px_rgba(244,63,94,.35)]"
+                            onClick={() => confirmDelete(r.id)}
+                            title="Eliminar lead"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                       <td className="px-4 py-3">{new Date(r.updatedAt).toLocaleString()}</td>
                     </tr>
@@ -441,9 +518,74 @@ const Leads: React.FC = () => {
       <LeadCreateModal
         open={openCreate}
         onClose={() => setOpenCreate(false)}
-        catalogs={{ marcas, categorias, tipos, estados, segmentos, comunas } as LeadCatalogs}
+        catalogs={catalogsForModals}
         onCreated={() => { setOpenCreate(false); void loadList(); }}
       />
+
+      {/* Modal: Editar Lead */}
+      {editing && (
+        <LeadEditModal
+          open={true}
+          lead={editing as LeadRow}
+          catalogs={catalogsForModals}
+          onClose={() => setEditing(null)}
+          onSubmit={(payload) => submitEdit(editing.id, payload)}
+        />
+      )}
+
+      {/* Confirmación de eliminación con spinner y mensaje */}
+      {deletingId !== null && (
+        <div className="fixed inset-0 z-50 grid place-items-center">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" onClick={() => (deletingLoading ? null : setDeletingId(null))} />
+          <div className="relative w-[min(420px,92vw)] rounded-2xl border border-white/10 bg-neutral-900/95 text-white p-5 shadow-[0_20px_60px_rgba(0,0,0,.65)] ring-1 ring-white/5">
+            <h3 className="text-lg font-bold mb-2">Eliminar lead #{deletingId}</h3>
+
+            {/* Estado visual */}
+            {deletingMessage ? (
+              <div className="flex items-center gap-3 mb-4 text-sm">
+                {deletingLoading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Check />
+                )}
+                <span className={cls(deletingLoading ? "text-white/80" : "text-emerald-200")}>
+                  {deletingMessage}
+                </span>
+              </div>
+            ) : (
+              <p className="text-white/70 mb-4 text-sm">Esta acción no se puede deshacer.</p>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <button
+                className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 hover:bg-white/10 disabled:opacity-50"
+                onClick={() => setDeletingId(null)}
+                type="button"
+                disabled={deletingLoading}
+              >
+                Cancelar
+              </button>
+              <button
+                className="rounded-lg border border-rose-300/50 bg-rose-400/10 px-4 py-2 text-rose-100 hover:bg-rose-400/20 shadow-[0_0_14px_rgba(244,63,94,.45)] disabled:opacity-50"
+                onClick={() => void doDelete()}
+                type="button"
+                disabled={deletingLoading}
+              >
+                {deletingLoading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="animate-spin" size={16} />
+                    Eliminando…
+                  </span>
+                ) : deletingMessage ? (
+                  "Cerrar"
+                ) : (
+                  "Eliminar"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -452,13 +594,13 @@ const Leads: React.FC = () => {
 function RowActions(props: {
   leadId: number;
   estados: { id: number; nombre: string }[];
+  marcas: { id: number; nombre: string }[];
   currentEstado?: string;
   onPickEstado: (leadId: number, nombre: string) => void | Promise<void>;
-  onAssign: (leadId: number, userId: number) => void | Promise<void>;
+  onAssignMarca: (leadId: number, marcaNombre: string) => void | Promise<void>;
 }) {
-  const { leadId, estados, currentEstado, onPickEstado, onAssign } = props;
-  const [open, setOpen] = useState<"estado" | "assign" | null>(null);
-  const [uid, setUid] = useState<string>("");
+  const { leadId, estados, marcas, currentEstado, onPickEstado, onAssignMarca } = props;
+  const [open, setOpen] = useState<"estado" | "assignMarca" | null>(null);
   const estadoBtnRef = useRef<HTMLButtonElement | null>(null);
   const assignBtnRef = useRef<HTMLButtonElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -491,12 +633,12 @@ function RowActions(props: {
 
       <button
         ref={assignBtnRef}
-        onClick={() => setOpen(open === "assign" ? null : "assign")}
-        className="rounded-lg border border-indigo-300/50 bg-indigo-400/10 px-3 py-1.5 text-xs text-indigo-100 hover:bg-indigo-400/20 shadow-[0_0_14px_rgba(99,102,241,.45)] focus:outline-none focus:ring-2 focus:ring-indigo-400/30"
+        onClick={() => setOpen(open === "assignMarca" ? null : "assignMarca")}
+        className="rounded-lg border border-fuchsia-300/50 bg-fuchsia-400/10 px-3 py-1.5 text-xs text-fuchsia-100 hover:bg-fuchsia-400/20 shadow-[0_0_14px_rgba(217,70,239,.45)]"
         type="button"
-        title="Asignar por usuarioId"
+        title="Asignar marca"
       >
-        Asignar
+        Asignar marca
       </button>
 
       {open && (
@@ -524,37 +666,23 @@ function RowActions(props: {
               </ul>
             </div>
           ) : (
-            <div className="p-3 space-y-3">
-              <div className="text-[11px] uppercase tracking-wide text-white/60">
-                Asignar a usuario (ID)
+            <div className="py-1">
+              <div className="px-3 py-2 text:[11px] uppercase tracking-wide text-white/60 border-b border-white/10">
+                Asignar marca
               </div>
-              <input
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={uid}
-                onChange={(e) => setUid(e.target.value)}
-                placeholder="Ej: 7"
-                className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/20"
-              />
-              <div className="flex justify-end gap-2">
-                <button
-                  className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10"
-                  onClick={() => setOpen(null)}
-                  type="button"
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="rounded-lg border border-emerald-300/50 bg-emerald-400/10 px-3 py-1.5 text-sm text-emerald-100 hover:bg-emerald-400/20 shadow-[0_0_14px_rgba(16,185,129,.45)]"
-                  onClick={() => {
-                    const n = Number(uid);
-                    if (Number.isFinite(n)) { void onAssign(leadId, n); setOpen(null); setUid(""); }
-                  }}
-                  type="button"
-                >
-                  Confirmar
-                </button>
-              </div>
+              <ul className="max-h-56 overflow-auto p-1">
+                {marcas.map((m) => (
+                  <li key={m.id}>
+                    <button
+                      className="w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-white/10"
+                      onClick={() => { void onAssignMarca(leadId, m.nombre); setOpen(null); }}
+                      type="button"
+                    >
+                      {m.nombre}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

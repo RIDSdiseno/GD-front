@@ -45,27 +45,39 @@ function ConfirmDialog(props: {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[60]">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" />
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] dark:bg-black/70 dark:backdrop-blur-[2px]" />
+      {/* Card */}
       <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-neutral-900/90 ring-1 ring-white/10 shadow-[0_20px_60px_rgba(0,0,0,.6)]">
+        <div className="w-full max-w-md rounded-2xl border ring-1 shadow transition-colors
+                        bg-white text-zinc-900 border-zinc-200 ring-black/5 shadow-black/10
+                        dark:bg-zinc-900/90 dark:text-white dark:border-white/10 dark:ring-white/10 dark:shadow-[0_20px_60px_rgba(0,0,0,.6)]">
           <div className="px-5 pt-5 pb-3">
-            <h3 className="text-lg font-extrabold text-white tracking-wide drop-shadow-[0_0_12px_rgba(255,214,10,.35)]">
+            <h3 className="text-lg font-extrabold tracking-wide
+                           text-zinc-900 drop-shadow-none
+                           dark:text-white dark:drop-shadow-[0_0_12px_rgba(255,214,10,.35)]">
               {title}
             </h3>
-            <p className="mt-2 text-sm text-white/80">{message}</p>
+            <p className="mt-2 text-sm text-zinc-700 dark:text-white/80">{message}</p>
           </div>
           <div className="flex items-center justify-end gap-3 px-5 pb-5">
             <button
               onClick={busy ? undefined : onCancel}
               disabled={busy}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-60"
+              className="rounded-xl border px-4 py-2 text-sm font-semibold transition
+                         bg-white text-zinc-800 border-zinc-200 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-black/10
+                         disabled:opacity-60
+                         dark:bg-white/5 dark:text-white dark:border-white/10 dark:hover:bg-white/10 dark:focus:ring-white/20"
             >
               {cancelText}
             </button>
             <button
               onClick={busy ? undefined : onConfirm}
               disabled={busy}
-              className="inline-flex items-center gap-2 rounded-xl border border-rose-300/50 bg-rose-500/15 px-4 py-2 text-sm font-bold text-rose-100 shadow-[0_0_14px_rgba(244,63,94,.45)] hover:bg-rose-500/25 focus:outline-none focus:ring-2 focus:ring-rose-400/40 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition
+                         bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-200
+                         disabled:opacity-60
+                         dark:bg-rose-500/15 dark:text-rose-100 dark:border-rose-300/50 dark:hover:bg-rose-500/25 dark:focus:ring-rose-400/40"
             >
               {busy ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
               {busy ? "Eliminando…" : confirmText}
@@ -140,7 +152,7 @@ const Users: React.FC = () => {
           message = text || message;
         }
       } catch {
-        /* ignore */
+        //
       }
       throw new Error(message);
     };
@@ -174,11 +186,7 @@ const Users: React.FC = () => {
     );
   }, [q, users]);
 
-  // === eliminar ===
-  const askDelete = (u: User) => {
-    setUserToDelete(u);
-    setConfirmOpen(true);
-  };
+  const askDelete = (u: User) => { setUserToDelete(u); setConfirmOpen(true); };
 
   const doDelete = async () => {
     if (!userToDelete) return;
@@ -186,37 +194,21 @@ const Users: React.FC = () => {
       setDeleting(true);
       setErr(null);
 
-      // intento 1
       const token = getAccessToken();
       const headers = new Headers({ "Content-Type": "application/json" });
       if (token) headers.set("Authorization", `Bearer ${token}`);
 
-      let resp = await fetch(`${API_URL}/users/${userToDelete.id}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers,
-      });
+      let resp = await fetch(`${API_URL}/users/${userToDelete.id}`, { method: "DELETE", credentials: "include", headers });
 
-      // si 401, intenta refresh y reintenta una vez
       if (resp.status === 401) {
-        const r = await fetch(`${API_URL}/auth/refresh`, {
-          method: "POST",
-          credentials: "include",
-          cache: "no-store",
-        });
+        const r = await fetch(`${API_URL}/auth/refresh`, { method: "POST", credentials: "include", cache: "no-store" });
         if (r.ok) {
           const refreshed: { token?: string } = await r.json();
-          if (refreshed.token) {
-            try { sessionStorage.setItem("accessToken", refreshed.token); } catch { /* ignore */ }
-          }
+          if (refreshed.token) { try { sessionStorage.setItem("accessToken", refreshed.token); } catch { /* ignore */ } }
           const headers2 = new Headers({ "Content-Type": "application/json" });
           const t2 = getAccessToken();
           if (t2) headers2.set("Authorization", `Bearer ${t2}`);
-          resp = await fetch(`${API_URL}/users/${userToDelete.id}`, {
-            method: "DELETE",
-            credentials: "include",
-            headers: headers2,
-          });
+          resp = await fetch(`${API_URL}/users/${userToDelete.id}`, { method: "DELETE", credentials: "include", headers: headers2 });
         }
       }
 
@@ -227,15 +219,12 @@ const Users: React.FC = () => {
           try {
             const j = JSON.parse(txt) as { error?: string; message?: string };
             message = j.error ?? j.message ?? txt ?? message;
-          } catch {
-            message = txt || message;
-          }
+          } catch { message = txt || message; }
         } catch { /* ignore */ }
         throw new Error(message);
       }
 
-      // éxito
-      setUsers((prev) => prev.filter((x) => x.id !== userToDelete.id));
+      setUsers(prev => prev.filter(x => x.id !== userToDelete.id));
       setConfirmOpen(false);
       setUserToDelete(null);
     } catch (e: unknown) {
@@ -246,175 +235,182 @@ const Users: React.FC = () => {
   };
 
   return (
-    <div className="relative h-[100svh] overflow-hidden">
-      {/* Fondo */}
-      <div className="fixed inset-0 -z-10">
-        <img src="/fondo2.png" alt="" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_10%_0%,rgba(255,214,10,.16),transparent_60%),radial-gradient(900px_500px_at_90%_10%,rgba(0,224,182,.16),transparent_60%)]" />
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" />
+  <div className="page-shell">
+    {/* Superficie principal (opaca en claro, sólida en oscuro) */}
+    <section
+      className="page-surface [color-scheme:light] dark:[color-scheme:dark]"
+      role="region"
+      aria-labelledby="users-title"
+    >
+      {/* Header */}
+      <div className="mb-6 sm:mb-8 flex items-center justify-between">
+        <h1
+          id="users-title"
+          className="force-ink text-2xl sm:text-3xl font-extrabold tracking-wide"
+        >
+          Gestión de Usuarios
+        </h1>
+
+
+        <button
+          type="button"
+          className="btn-new"
+          onClick={() => setOpenNew(true)}
+          disabled={deleting}
+        >
+          <Plus size={18} /> Nuevo Usuario
+        </button>
+
       </div>
 
-      {/* Contenido a pantalla completa */}
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 sm:py-10 h-full flex flex-col">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8 flex items-center justify-between">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-wide text-white drop-shadow-[0_0_18px_rgba(255,214,10,.35)]">
-            Gestión de Usuarios
-          </h1>
-
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-xl border border-blue-400/50 bg-blue-500/10 px-4 py-2 text-blue-100 font-semibold shadow-[0_0_16px_rgba(59,130,246,.35)] hover:bg-blue-500/20 hover:shadow-[0_0_22px_rgba(59,130,246,.5)] focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition"
-            onClick={() => setOpenNew(true)}
+      {/* Buscador + contador */}
+      <div className="mb-4 sm:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-xl">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-300/80">
+            <Search size={18} />
+          </span>
+          <input
+            type="search"
+            autoComplete="off"
+            inputMode="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar por ID, nombre, email o rol…"
+            className="field pl-10 [color-scheme:light] dark:[color-scheme:dark]"
             disabled={deleting}
-          >
-            <Plus size={18} /> Nuevo Usuario
-          </button>
+            aria-label="Buscar usuarios"
+          />
         </div>
 
-        {/* Buscador + contador */}
-        <div className="mb-4 sm:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-xl">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300/80">
-              <Search size={18} />
-            </span>
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar por ID, nombre, email o rol…"
-              className="w-full rounded-2xl bg-white/5 text-white placeholder-white/60 border border-white/10 focus:border-yellow-300/70 focus:ring-2 focus:ring-yellow-300/40 pl-10 pr-3 py-3 outline-none transition backdrop-blur-xl"
-              disabled={deleting}
-            />
-          </div>
-
-          <div className="self-end sm:self-auto rounded-xl bg-black/30 border border-white/10 text-white/90 px-4 py-2 backdrop-blur-md shadow-[0_0_14px_rgba(255,255,255,.08)]">
-            Usuarios encontrados:{" "}
-            <span className="font-extrabold text-yellow-300 drop-shadow-[0_0_10px_rgba(255,214,10,.6)]">
-              {filtered.length}
-            </span>
-          </div>
-        </div>
-
-        {/* Región scrollable (sólo la tabla) */}
-        <div className="flex-1 min-h-0 relative">
-          {loading ? (
-            <div className="flex items-center gap-2 text-white/90">
-              <Loader2 className="animate-spin" /> Cargando…
-            </div>
-          ) : err ? (
-            <div className="rounded-2xl border border-red-400/50 bg-red-500/10 px-4 py-3 text-sm text-red-200 backdrop-blur-md">
-              {err}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-white/80 backdrop-blur-md">
-              No hay usuarios para mostrar.
-            </div>
-          ) : (
-            <div className="h-full overflow-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,.45)] ring-1 ring-white/5 relative">
-              <table className="min-w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-white/10 text-white/80 backdrop-blur-xl shadow-[0_1px_0_rgba(255,255,255,.08)]">
-                  <tr className="[&>th]:px-4 [&>th]:py-3 [&>th]:text-left">
-                    <th>ID</th>
-                    <th>NOMBRE DE USUARIO</th>
-                    <th>EMAIL</th>
-                    <th>NIVEL</th>
-                    <th>ESTADO</th>
-                    <th className="text-center">ACCIONES</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 text-white/90">
-                  {filtered.map((u) => (
-                    <tr key={u.id} className="hover:bg-white/5 transition">
-                      <td className="px-4 py-3">{u.id}</td>
-                      <td className="px-4 py-3 font-semibold">{u.nombreUsuario}</td>
-                      <td className="px-4 py-3 text-white/80">{u.email}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide border
-                          ${
-                            u.nivel === "ADMIN"
-                              ? "bg-yellow-400/15 text-yellow-200 border-yellow-300/50 shadow-[0_0_14px_rgba(255,214,10,.45)]"
-                              : u.nivel === "SUB_ADMIN"
-                              ? "bg-cyan-400/15 text-cyan-200 border-cyan-300/50 shadow-[0_0_14px_rgba(34,211,238,.45)]"
-                              : "bg-white/10 text-white/80 border-white/20"
-                          }`}
-                        >
-                          {u.nivel}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {u.status ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/50 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,.45)]">
-                            <CheckCircle2 size={14} /> Activo
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-rose-300/50 bg-rose-400/10 px-2.5 py-1 text-[11px] font-semibold text-rose-200 shadow-[0_0_14px_rgba(244,63,94,.4)]">
-                            <XCircle size={14} /> Inactivo
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            className="rounded-lg px-3 py-1.5 border border-cyan-300/50 text-cyan-100 bg-cyan-400/10 hover:bg-cyan-400/20 shadow-[0_0_14px_rgba(34,211,238,.45)] transition disabled:opacity-60"
-                            disabled={deleting}
-                            onClick={() => { /* TODO: editar */ }}
-                          >
-                            Editar
-                          </button>
-                          <button
-                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 border border-rose-300/50 text-rose-100 bg-rose-400/10 hover:bg-rose-400/20 shadow-[0_0_14px_rgba(244,63,94,.45)] transition disabled:opacity-60"
-                            disabled={deleting}
-                            onClick={() => askDelete(u)}
-                          >
-                            <Trash2 size={16} /> Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Overlay de bloqueo + spinner global (mientras borra) */}
-              {deleting && (
-                <div className="absolute inset-0 z-10 grid place-items-center bg-black/40 backdrop-blur-[1px]">
-                  <div className="inline-flex items-center gap-2 rounded-xl bg-neutral-900/90 border border-white/10 px-4 py-2 text-white">
-                    <Loader2 className="animate-spin" size={18} /> Eliminando usuario…
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+        <div className="users-counter self-end sm:self-auto text-neutral-900 dark:text-white/90">
+          Usuarios encontrados:{" "}
+          <span className="font-extrabold text-yellow-600 dark:text-yellow-300">
+            {filtered.length}
+          </span>
         </div>
       </div>
 
-      {/* Modal: Confirmar eliminación */}
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Confirmar eliminación"
-        message={
-          userToDelete
-            ? `¿Seguro que deseas eliminar al usuario “${userToDelete.nombreUsuario}” (ID: ${userToDelete.id})? Esta acción no se puede deshacer.`
-            : "¿Seguro que deseas eliminar este usuario?"
-        }
-        busy={deleting}
-        onCancel={() => (deleting ? undefined : setConfirmOpen(false))}
-        onConfirm={doDelete}
-        confirmText="Eliminar usuario"
-        cancelText="Cancelar"
-      />
+      {/* Tabla / estados */}
+      <div className="flex-1 min-h-0 relative">
+        {loading ? (
+          <div className="flex items-center gap-2 text-neutral-800 dark:text-white/90" aria-busy="true">
+            <Loader2 className="animate-spin" /> Cargando…
+          </div>
+        ) : err ? (
+          <div className="rounded-2xl border px-4 py-3 text-sm
+                          bg-red-50 text-red-700 border-red-200
+                          dark:border-red-400/50 dark:bg-red-500/10 dark:text-red-200">
+            {err}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="rounded-2xl border px-4 py-6
+                          bg-white text-neutral-700 border-zinc-200
+                          dark:bg-transparent dark:text-white/80 dark:border-white/10">
+            No hay usuarios para mostrar.
+          </div>
+        ) : (
+          <div className="users-shell relative overflow-auto">
+            <table className="min-w-full text-sm">
+              <thead className="users-thead">
+                <tr className="[&>th]:px-4 [&>th]:py-3 [&>th]:text-left">
+                  <th>ID</th>
+                  <th>NOMBRE DE USUARIO</th>
+                  <th>EMAIL</th>
+                  <th>NIVEL</th>
+                  <th>ESTADO</th>
+                  <th className="text-center">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                {filtered.map((u) => (
+                  <tr key={u.id} className="transition hover:bg-black/5 dark:hover:bg-white/5">
+                    <td className="px-4 py-3">{u.id}</td>
+                    <td className="px-4 py-3 font-semibold">{u.nombreUsuario}</td>
+                    <td className="px-4 py-3 text-neutral-700 dark:text-white/80">{u.email}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={
+                          "pill " +
+                          (u.nivel === "ADMIN"
+                            ? "pill--role-admin"
+                            : u.nivel === "SUB_ADMIN"
+                            ? "pill--role-sub"
+                            : "pill--role-user")
+                        }
+                      >
+                        {u.nivel}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`pill ${u.status ? "pill--ok" : "pill--off"}`}>
+                        {u.status ? <CheckCircle2 size={14} /> : <XCircle size={14} />}{" "}
+                        {u.status ? "Activo" : "Inactivo"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          className="btn btn--cyan disabled:opacity-60"
+                          disabled={deleting}
+                          onClick={() => {}}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          className="btn btn--rose disabled:opacity-60"
+                          disabled={deleting}
+                          onClick={() => askDelete(u)}
+                        >
+                          <Trash2 size={16} /> Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-      {/* Modal: Nuevo Usuario */}
-      <NewUserModal
-        open={openNew}
-        onClose={() => setOpenNew(false)}
-        onCreated={(u: CreatedUser) => {
-          setUsers((prev) => [...prev, u].sort((a, b) => a.id - b.id));
-        }}
-      />
-    </div>
-  );
+            {/* Overlay de bloqueo + spinner global (mientras borra) */}
+            {deleting && (
+              <div className="absolute inset-0 z-10 grid place-items-center bg-black/10 dark:bg-black/40">
+                <div className="inline-flex items-center gap-2 rounded-xl border px-4 py-2
+                                bg-white text-zinc-900 border-zinc-200
+                                dark:bg-zinc-900/90 dark:text-white dark:border-white/10">
+                  <Loader2 className="animate-spin" size={18} /> Eliminando usuario…
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+
+    {/* Modales fuera de la superficie para no recortar sombras */}
+    <ConfirmDialog
+      open={confirmOpen}
+      title="Confirmar eliminación"
+      message={
+        userToDelete
+          ? `¿Seguro que deseas eliminar al usuario “${userToDelete.nombreUsuario}” (ID: ${userToDelete.id})? Esta acción no se puede deshacer.`
+          : "¿Seguro que deseas eliminar este usuario?"
+      }
+      busy={deleting}
+      onCancel={() => (deleting ? undefined : setConfirmOpen(false))}
+      onConfirm={doDelete}
+      confirmText="Eliminar usuario"
+      cancelText="Cancelar"
+    />
+
+    <NewUserModal
+      open={openNew}
+      onClose={() => setOpenNew(false)}
+      onCreated={(u: CreatedUser) => {
+        setUsers((prev) => [...prev, u].sort((a, b) => a.id - b.id));
+      }}
+    />
+  </div>
+);
+
 };
 
 export default Users;
